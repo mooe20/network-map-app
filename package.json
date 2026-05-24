@@ -1,0 +1,11 @@
+{
+  "name": "network-map-app",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "npm install --prefix frontend && npm run build --prefix frontend && npm install --prefix backend",
+    "start": "node backend/src/app.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
