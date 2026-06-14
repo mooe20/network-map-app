@@ -16,6 +16,7 @@ export default function Network() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('graph');
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
+  const [activeFilters, setActiveFilters] = useState(new Set()); // 選択中の関係タイプ
 
   useEffect(() => {
     if (focusedUserId) loadNetwork(focusedUserId);
@@ -177,7 +178,45 @@ export default function Network() {
 
   const handleNodeClick = (node) => {
     setFocusedUserId(node.id);
+    setActiveFilters(new Set()); // フォーカス変更時はフィルターリセット
   };
+
+  const toggleFilter = (type) => {
+    setActiveFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      return next;
+    });
+  };
+
+  // グラフ上に存在する関係タイプ一覧（パスや未接続除く）
+  const availableTypes = [...new Set(
+    graphData.links
+      .filter(l => l.relationshipType)
+      .map(l => l.relationshipType)
+  )];
+
+  // フィルター適用済みグラフデータ
+  const filteredGraphData = (() => {
+    if (activeFilters.size === 0) return graphData;
+    const visibleLinks = graphData.links.filter(l =>
+      !l.relationshipType || activeFilters.has(l.relationshipType)
+    );
+    const visibleNodeIds = new Set();
+    visibleLinks.forEach(l => {
+      visibleNodeIds.add(typeof l.source === 'object' ? l.source.id : l.source);
+      visibleNodeIds.add(typeof l.target === 'object' ? l.target.id : l.target);
+    });
+    // 中心ノードと自分は常に表示
+    graphData.nodes.forEach(n => {
+      if (n.isCenter || n.isMe) visibleNodeIds.add(n.id);
+    });
+    return {
+      nodes: graphData.nodes.filter(n => visibleNodeIds.has(n.id)),
+      links: visibleLinks,
+    };
+  })();
 
   const handleSearch = async (q) => {
     setSearchQuery(q);
@@ -425,10 +464,52 @@ export default function Network() {
           </div>
         ) : (
           <NetworkGraph
-            graphData={graphData}
+            graphData={filteredGraphData}
             focusedNodeId={String(focusedUserId)}
             onNodeClick={handleNodeClick}
           />
+        )}
+
+        {/* 関係タイプフィルターチップ */}
+        {!loading && availableTypes.length > 0 && (
+          <div className="absolute bottom-4 left-0 right-0 flex justify-center px-4 pointer-events-none">
+            <div className="flex flex-wrap gap-2 justify-center pointer-events-auto max-w-full">
+              {availableTypes.map(type => {
+                const active = activeFilters.has(type);
+                const color = {
+                  '家族': '#f472b6', 'ビジネス': '#34d399', '地元': '#fbbf24', '大学': '#60a5fa',
+                  'イベント(留学・趣味・活動)': '#a78bfa', 'バイト・インターン': '#6ee7b7',
+                  'SNS': '#94a3b8', 'その他': '#d1d5db', '♡': '#ef4444',
+                }[type] || '#94a3b8';
+                return (
+                  <button
+                    key={type}
+                    onClick={() => toggleFilter(type)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium shadow-md border-2 transition-all"
+                    style={{
+                      backgroundColor: active ? color : 'white',
+                      borderColor: color,
+                      color: active ? 'white' : color,
+                    }}
+                  >
+                    <span
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: active ? 'white' : color }}
+                    />
+                    {type}
+                  </button>
+                );
+              })}
+              {activeFilters.size > 0 && (
+                <button
+                  onClick={() => setActiveFilters(new Set())}
+                  className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-800 text-white shadow-md"
+                >
+                  全て表示
+                </button>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </div>
