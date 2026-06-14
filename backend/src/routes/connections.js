@@ -50,6 +50,48 @@ router.get('/network/:userId', requireAuth, async (req, res) => {
   }
 });
 
+// 自分からtargetIdまでの最短経路をBFSで探す
+router.get('/path/:targetId', requireAuth, async (req, res) => {
+  const startId = req.user.id;
+  const endId = parseInt(req.params.targetId);
+  if (startId === endId) return res.json({ path: [] });
+
+  const MAX_DEPTH = 6;
+  const visited = new Set([startId]);
+  const queue = [[startId]]; // 経路の配列
+
+  while (queue.length > 0) {
+    const path = queue.shift();
+    if (path.length >= MAX_DEPTH) continue;
+
+    const current = path[path.length - 1];
+    const result = await pool.query(`
+      SELECT CASE WHEN requester_id = $1 THEN receiver_id ELSE requester_id END as neighbor_id
+      FROM connections
+      WHERE (requester_id = $1 OR receiver_id = $1) AND status = 'accepted'
+    `, [current]);
+
+    for (const row of result.rows) {
+      const neighborId = row.neighbor_id;
+      if (neighborId === endId) {
+        const fullPath = [...path, neighborId];
+        const userDetails = await pool.query(
+          'SELECT id, name, company, avatar_url FROM users WHERE id = ANY($1)',
+          [fullPath]
+        );
+        const userMap = {};
+        userDetails.rows.forEach(u => { userMap[u.id] = u; });
+        return res.json({ path: fullPath.map(id => userMap[id]).filter(Boolean) });
+      }
+      if (!visited.has(neighborId)) {
+        visited.add(neighborId);
+        queue.push([...path, neighborId]);
+      }
+    }
+  }
+  return res.json({ path: null }); // 経路なし
+});
+
 router.get('/heart-taken', requireAuth, async (req, res) => {
   try {
     const result = await pool.query(

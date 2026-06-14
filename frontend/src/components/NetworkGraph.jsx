@@ -48,12 +48,14 @@ export default function NetworkGraph({ graphData, focusedNodeId, onNodeClick }) 
     const radius = (isCenter ? 22 : isMe ? 18 : 15) / globalScale;
     const fontSize = Math.max(11 / globalScale, 2.5);
 
+    const isPathNode = node.isPathNode && !isCenter && !isMe;
+
     ctx.beginPath();
     ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI);
-    ctx.fillStyle = isCenter ? '#6366f1' : isMe ? '#f59e0b' : '#e0e7ff';
+    ctx.fillStyle = isCenter ? '#6366f1' : isMe ? '#f59e0b' : isPathNode ? '#fff7ed' : '#e0e7ff';
     ctx.fill();
-    ctx.strokeStyle = isCenter ? '#4338ca' : isMe ? '#d97706' : '#a5b4fc';
-    ctx.lineWidth = (isCenter || isMe ? 3 : 1.5) / globalScale;
+    ctx.strokeStyle = isCenter ? '#4338ca' : isMe ? '#d97706' : isPathNode ? '#fb923c' : '#a5b4fc';
+    ctx.lineWidth = (isCenter || isMe ? 3 : isPathNode ? 2 : 1.5) / globalScale;
     ctx.stroke();
 
     // isMe のとき点線の枠で強調
@@ -114,7 +116,64 @@ export default function NetworkGraph({ graphData, focusedNodeId, onNodeClick }) 
     const end = link.target;
     if (typeof start !== 'object' || typeof end !== 'object') return;
 
-    // 破線（間接つながり）の描画
+    // 経路ハイライト（自分からの最短経路）
+    if (link.isPath && !link.relationshipType) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.strokeStyle = '#fb923c';
+      ctx.lineWidth = 2.5 / globalScale;
+      ctx.setLineDash([5 / globalScale, 3 / globalScale]);
+      ctx.stroke();
+      ctx.restore();
+
+      // 矢印的な丸を経路方向に置く
+      const midX = (start.x + end.x) / 2;
+      const midY = (start.y + end.y) / 2;
+      ctx.beginPath();
+      ctx.arc(midX, midY, 3 / globalScale, 0, 2 * Math.PI);
+      ctx.fillStyle = '#fb923c';
+      ctx.fill();
+      return;
+    }
+
+    // 経路上の既存エッジをオレンジで強調
+    if (link.isPath && link.relationshipType) {
+      const color = RELATIONSHIP_COLORS[link.relationshipType] || DEFAULT_COLOR;
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.strokeStyle = '#fb923c';
+      ctx.lineWidth = 4 / globalScale;
+      ctx.stroke();
+      // 元の色の線を上に重ねる
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2 / globalScale;
+      ctx.stroke();
+      ctx.restore();
+
+      const midX = (start.x + end.x) / 2;
+      const midY = (start.y + end.y) / 2;
+      const fontSize = Math.max(9 / globalScale, 2);
+      ctx.font = `bold ${fontSize}px -apple-system, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const text = `＋ ${link.label}`;
+      const tw = ctx.measureText(text).width;
+      const pad = 2 / globalScale;
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillRect(midX - tw/2 - pad, midY - fontSize/2 - pad, tw + pad*2, fontSize + pad*2);
+      ctx.fillStyle = color;
+      ctx.fillText(text, midX, midY);
+      return;
+    }
+
+    // 破線（本当に無接続）
     if (link.isPhantom) {
       const dx = end.x - start.x;
       const dy = end.y - start.y;

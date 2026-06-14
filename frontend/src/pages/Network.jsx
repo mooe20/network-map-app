@@ -77,38 +77,55 @@ export default function Network() {
         });
       }
 
-      // 自分とフォーカス対象の間のエッジを取得して追加
-      let directlyConnected = false;
+      // 自分→フォーカス対象の最短経路を取得
       if (!isSelf) {
         try {
-          const myNetRes = await api.get(`/connections/network/${myId}`);
-          myNetRes.data.forEach(conn => {
-            const rid = String(conn.requester_id);
-            const eid = String(conn.receiver_id);
-            const otherNodeId = rid === myId ? eid : rid;
-            if (otherNodeId === focusId) {
-              const key = [rid, eid].sort().join('-');
-              if (!linksMap.has(key)) {
-                linksMap.set(key, { source: rid, target: eid, label: conn.relationship_type, relationshipType: conn.relationship_type });
-              }
-              directlyConnected = true;
-            }
-          });
-        } catch {}
+          const pathRes = await api.get(`/connections/path/${focusId}`);
+          const pathUsers = pathRes.data.path; // [{id, name, company}, ...]
 
-        // 直接つながっていない場合でも点線で自分とフォーカス対象を結ぶ
-        if (!directlyConnected) {
-          const key = [myId, focusId].sort().join('-');
-          if (!linksMap.has(key)) {
-            linksMap.set(key, {
-              source: myId,
-              target: focusId,
-              label: '',
-              relationshipType: null,
-              isPhantom: true,
+          if (pathUsers && pathUsers.length >= 2) {
+            // 経路上の中間ノードをグラフに追加（経路フラグ付き）
+            pathUsers.forEach(u => {
+              const uid = String(u.id);
+              if (!nodesMap.has(uid)) {
+                nodesMap.set(uid, {
+                  id: uid,
+                  name: u.name,
+                  company: u.company,
+                  isPathNode: true,
+                });
+              } else {
+                // 既存ノードに経路フラグを付ける
+                nodesMap.get(uid).isPathNode = true;
+              }
             });
+
+            // 経路のエッジを追加（isPath フラグ付き）
+            for (let i = 0; i < pathUsers.length - 1; i++) {
+              const a = String(pathUsers[i].id);
+              const b = String(pathUsers[i + 1].id);
+              const key = [a, b].sort().join('-');
+              // 既存エッジに isPath フラグ追加、なければ新規追加
+              if (linksMap.has(key)) {
+                linksMap.get(key).isPath = true;
+              } else {
+                linksMap.set(key, {
+                  source: a,
+                  target: b,
+                  label: '',
+                  relationshipType: null,
+                  isPath: true,
+                });
+              }
+            }
+          } else if (!pathUsers) {
+            // 本当につながりがない場合だけ破線
+            const key = [myId, focusId].sort().join('-');
+            if (!linksMap.has(key)) {
+              linksMap.set(key, { source: myId, target: focusId, label: '', relationshipType: null, isPhantom: true });
+            }
           }
-        }
+        } catch {}
       }
 
       // ラジアル配置：自分ノードを特別扱い
