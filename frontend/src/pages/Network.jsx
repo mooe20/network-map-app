@@ -480,7 +480,7 @@ export default function Network() {
 
         {/* 関係タイプフィルターチップ */}
         {!loading && availableTypes.length > 0 && (
-          <div className="absolute bottom-4 left-0 right-0 flex justify-center px-4 pointer-events-none">
+          <div className="absolute left-0 right-0 flex justify-center px-4 pointer-events-none" style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}>
             <div className="flex flex-wrap gap-2 justify-center pointer-events-auto max-w-full">
               {availableTypes.map(type => {
                 const active = activeFilters.has(type);
