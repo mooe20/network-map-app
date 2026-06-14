@@ -50,6 +50,7 @@ export default function Network() {
         name: userRes.data.name,
         company: userRes.data.company,
         avatar_url: userRes.data.avatar_url,
+        node_color: userRes.data.node_color || '#6366f1',
         isCenter: true,
         fx: 0, fy: 0, x: 0, y: 0,
       });
@@ -58,9 +59,9 @@ export default function Network() {
         const rid = String(conn.requester_id);
         const eid = String(conn.receiver_id);
         if (!nodesMap.has(rid))
-          nodesMap.set(rid, { id: rid, name: conn.requester_name, company: conn.requester_company });
+          nodesMap.set(rid, { id: rid, name: conn.requester_name, company: conn.requester_company, node_color: conn.requester_node_color || '#6366f1' });
         if (!nodesMap.has(eid))
-          nodesMap.set(eid, { id: eid, name: conn.receiver_name, company: conn.receiver_company });
+          nodesMap.set(eid, { id: eid, name: conn.receiver_name, company: conn.receiver_company, node_color: conn.receiver_node_color || '#6366f1' });
         const key = [rid, eid].sort().join('-');
         if (!linksMap.has(key))
           linksMap.set(key, { source: rid, target: eid, label: conn.relationship_type, relationshipType: conn.relationship_type });
@@ -74,6 +75,7 @@ export default function Network() {
           name: meRes.data.name,
           company: meRes.data.company,
           avatar_url: meRes.data.avatar_url,
+          node_color: meRes.data.node_color || '#6366f1',
           isSelf: true,
         });
       }
@@ -93,6 +95,7 @@ export default function Network() {
                   id: uid,
                   name: u.name,
                   company: u.company,
+                  node_color: u.node_color || '#6366f1',
                   isPathNode: true,
                 });
               } else {

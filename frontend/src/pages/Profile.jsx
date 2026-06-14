@@ -151,6 +151,21 @@ const UNIVERSITIES = [
 ].filter((v, i, a) => a.indexOf(v) === i).sort();
 
 const SNS_PLATFORMS = ['Twitter/X', 'LinkedIn', 'Instagram', 'GitHub', 'Facebook', 'Website', 'その他'];
+
+const NODE_COLORS = [
+  { hex: '#6366f1', label: 'インディゴ' },
+  { hex: '#ef4444', label: 'レッド' },
+  { hex: '#f97316', label: 'オレンジ' },
+  { hex: '#ffd142', label: 'イエロー' },
+  { hex: '#22c55e', label: 'グリーン' },
+  { hex: '#0ea5e9', label: 'スカイブルー' },
+  { hex: '#3b82f6', label: 'ブルー' },
+  { hex: '#a855f7', label: 'パープル' },
+  { hex: '#ec4899', label: 'ピンク' },
+  { hex: '#fb7185', label: 'ローズ' },
+  { hex: '#f8fafc', label: 'ホワイト' },
+  { hex: '#0d1117', label: 'ブラック' },
+];
 const RELATIONSHIP_TYPES = ['家族', 'ビジネス', '地元', '大学', 'イベント(留学・趣味・活動)', 'バイト・インターン', 'SNS', 'その他', '♡'];
 const RELATIONSHIP_COLORS = {
   '家族': '#f472b6',
@@ -197,6 +212,7 @@ export default function Profile() {
         title: res.data.title || '',
         bio: res.data.bio || '',
         school: res.data.school || '',
+        node_color: res.data.node_color || '#6366f1',
         avatar_url: res.data.avatar_url || '',
         sns_links: res.data.sns_links || [],
       });
@@ -599,6 +615,41 @@ function EditForm({ form, setForm, onSave, onCancel, saving }) {
       ))}
 
       <SchoolInput value={form.school} onChange={v => setForm({ ...form, school: v })} />
+
+      {/* ノードカラー選択 */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">マップ上のアイコン色</label>
+        <div className="flex flex-wrap gap-2">
+          {NODE_COLORS.map(({ hex, label }) => {
+            const selected = (form.node_color || '#6366f1') === hex;
+            return (
+              <button
+                key={hex}
+                type="button"
+                title={label}
+                onClick={() => setForm(f => ({ ...f, node_color: hex }))}
+                className="w-9 h-9 rounded-full border-4 transition-all hover:scale-110 flex items-center justify-center"
+                style={{
+                  backgroundColor: hex,
+                  borderColor: selected ? '#6366f1' : hex === '#f8fafc' ? '#d1d5db' : hex,
+                  boxShadow: selected ? '0 0 0 2px white, 0 0 0 4px #6366f1' : 'none',
+                  outline: selected ? 'none' : 'none',
+                }}
+              >
+                {selected && (
+                  <svg className="w-4 h-4" viewBox="0 0 20 20" fill={hex === '#f8fafc' || hex === '#ffd142' ? '#374151' : 'white'}>
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-xs text-gray-400 mt-1.5">
+          {NODE_COLORS.find(c => c.hex === (form.node_color || '#6366f1'))?.label || 'インディゴ'} を選択中
+        </p>
+      </div>
+
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">自己紹介</label>
         <textarea

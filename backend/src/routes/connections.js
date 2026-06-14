@@ -36,8 +36,8 @@ router.get('/network/:userId', requireAuth, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT c.id, c.requester_id, c.receiver_id, c.relationship_type,
-             u1.name as requester_name, u1.company as requester_company,
-             u2.name as receiver_name, u2.company as receiver_company
+             u1.name as requester_name, u1.company as requester_company, u1.node_color as requester_node_color,
+             u2.name as receiver_name, u2.company as receiver_company, u2.node_color as receiver_node_color
       FROM connections c
       JOIN users u1 ON u1.id = c.requester_id
       JOIN users u2 ON u2.id = c.receiver_id
@@ -76,7 +76,7 @@ router.get('/path/:targetId', requireAuth, async (req, res) => {
       if (neighborId === endId) {
         const fullPath = [...path, neighborId];
         const userDetails = await pool.query(
-          'SELECT id, name, company, avatar_url FROM users WHERE id = ANY($1)',
+          'SELECT id, name, company, avatar_url, node_color FROM users WHERE id = ANY($1)',
           [fullPath]
         );
         const userMap = {};

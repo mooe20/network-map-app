@@ -50,11 +50,17 @@ export default function NetworkGraph({ graphData, focusedNodeId, onNodeClick }) 
 
     const isPathNode = node.isPathNode && !isCenter && !isMe;
 
+    // ユーザー指定のノードカラー（自分・センターは専用色）
+    const userColor = node.node_color || '#6366f1';
+    const fillColor = isCenter ? userColor : isMe ? '#f59e0b' : isPathNode ? '#fff7ed' : '#e0e7ff';
+    // センターノードの枠色: userColorを少し暗くする
+    const centerStroke = isCenter ? (node.node_color || '#4338ca') : null;
+
     ctx.beginPath();
     ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI);
-    ctx.fillStyle = isCenter ? '#6366f1' : isMe ? '#f59e0b' : isPathNode ? '#fff7ed' : '#e0e7ff';
+    ctx.fillStyle = fillColor;
     ctx.fill();
-    ctx.strokeStyle = isCenter ? '#4338ca' : isMe ? '#d97706' : isPathNode ? '#fb923c' : '#a5b4fc';
+    ctx.strokeStyle = centerStroke || (isMe ? '#d97706' : isPathNode ? '#fb923c' : '#a5b4fc');
     ctx.lineWidth = (isCenter || isMe ? 3 : isPathNode ? 2 : 1.5) / globalScale;
     ctx.stroke();
 

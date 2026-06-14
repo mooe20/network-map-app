@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   title VARCHAR(100),
   bio TEXT,
   school VARCHAR(200),
+  node_color VARCHAR(7) DEFAULT '#6366f1',
   avatar_url TEXT,
   created_at TIMESTAMP DEFAULT NOW()
 );
