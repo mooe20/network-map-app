@@ -150,6 +150,39 @@ const UNIVERSITIES = [
   '沖縄大学','名桜大学','沖縄国際大学','沖縄キリスト教学院大学',
 ].filter((v, i, a) => a.indexOf(v) === i).sort();
 
+const MAJORS = [
+  // 人文・社会
+  '文学','日本文学','英米文学','フランス文学','ドイツ文学','中国文学','比較文学',
+  '哲学','倫理学','美学・芸術学','史学・歴史学','考古学','地理学','心理学','社会学',
+  '社会福祉学','教育学','教育心理学','文化人類学','言語学','日本語日本文化',
+  // 法・政治・経済
+  '法学','政治学','国際関係学','国際政治学','経済学','経営学','商学','会計学',
+  '財政学','金融学','マーケティング','経営情報学','国際経営学','行政学','公共政策',
+  // 理工
+  '数学','統計学','物理学','化学','生物学','地球科学','天文学','情報科学','情報工学',
+  'コンピュータサイエンス','電気工学','電子工学','機械工学','土木工学','建築学',
+  '材料工学','化学工学','応用化学','環境工学','航空宇宙工学','ロボット工学',
+  'システム工学','都市工学','数理工学','情報通信工学','制御工学',
+  // 農・生命
+  '農学','農業経済学','農業工学','農芸化学','林学','水産学','食品科学',
+  '生命科学','生物工学','バイオテクノロジー','環境科学','畜産学',
+  // 医療・保健
+  '医学','歯学','薬学','看護学','保健学','公衆衛生学','理学療法学','作業療法学',
+  '栄養学','臨床検査学','放射線学','視能訓練学','言語聴覚学',
+  // 教育・体育
+  '体育学','スポーツ科学','健康科学','武道学','養護教諭',
+  // 芸術・デザイン
+  '美術','デザイン','グラフィックデザイン','プロダクトデザイン','建築デザイン',
+  'インテリアデザイン','ファッションデザイン','映像・映画','写真','音楽','演劇',
+  '工芸','アニメーション','ゲームデザイン',
+  // 国際・外国語
+  '国際学','国際文化学','外国語学','英語学','国際コミュニケーション','通訳・翻訳',
+  '観光学','ホスピタリティ',
+  // 複合・学際
+  '総合政策','環境政策','メディア学','ジャーナリズム','社会情報学',
+  'データサイエンス','AI・人工知能','認知科学','神経科学',
+].sort();
+
 const SNS_PLATFORMS = ['Twitter/X', 'LinkedIn', 'Instagram', 'GitHub', 'Facebook', 'Website', 'その他'];
 
 const NODE_COLORS = [
@@ -212,6 +245,7 @@ export default function Profile() {
         title: res.data.title || '',
         bio: res.data.bio || '',
         school: res.data.school || '',
+        major: res.data.major || '',
         hobby: res.data.hobby || '',
         node_color: res.data.node_color || '#6366f1',
         avatar_url: res.data.avatar_url || '',
@@ -410,6 +444,48 @@ function SchoolInput({ value, onChange }) {
   );
 }
 
+function MajorInput({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  const filtered = value
+    ? MAJORS.filter(m => m.includes(value))
+    : MAJORS;
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <label className="block text-sm font-medium text-gray-700 mb-1">専攻・学部</label>
+      <input
+        type="text"
+        value={value}
+        onChange={e => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        placeholder="専攻や学部を入力または選択..."
+        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+      />
+      {open && filtered.length > 0 && (
+        <ul className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+          {filtered.map(m => (
+            <li
+              key={m}
+              onMouseDown={() => { onChange(m); setOpen(false); }}
+              className={`px-3 py-2 text-sm cursor-pointer hover:bg-indigo-50 ${value === m ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-700'}`}
+            >
+              {m}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function ViewProfile({ profile, isOwn, connectionStatus, onConnectClick, connections }) {
   return (
     <div>
@@ -437,6 +513,15 @@ function ViewProfile({ profile, isOwn, connectionStatus, onConnectClick, connect
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
               </svg>
               {profile.school}
+              {profile.major && <span className="text-gray-400">・{profile.major}</span>}
+            </p>
+          )}
+          {!profile.school && profile.major && (
+            <p className="text-gray-500 text-sm flex items-center gap-1 mt-0.5">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+              </svg>
+              {profile.major}
             </p>
           )}
           {profile.hobby && (
@@ -624,6 +709,7 @@ function EditForm({ form, setForm, onSave, onCancel, saving }) {
       ))}
 
       <SchoolInput value={form.school} onChange={v => setForm({ ...form, school: v })} />
+      <MajorInput value={form.major} onChange={v => setForm({ ...form, major: v })} />
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">趣味・興味</label>
