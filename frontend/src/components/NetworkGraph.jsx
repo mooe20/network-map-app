@@ -44,20 +44,32 @@ export default function NetworkGraph({ graphData, focusedNodeId, onNodeClick }) 
 
   const nodeCanvasObject = useCallback((node, ctx, globalScale) => {
     const isCenter = node.id === focusedNodeId;
-    // 画面上のピクセルサイズを固定（ズームに依存しない）
-    const radius = (isCenter ? 22 : 15) / globalScale;
+    const isMe = node.isMe === true;
+    const radius = (isCenter ? 22 : isMe ? 18 : 15) / globalScale;
     const fontSize = Math.max(11 / globalScale, 2.5);
 
     ctx.beginPath();
     ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI);
-    ctx.fillStyle = isCenter ? '#6366f1' : '#e0e7ff';
+    ctx.fillStyle = isCenter ? '#6366f1' : isMe ? '#f59e0b' : '#e0e7ff';
     ctx.fill();
-    ctx.strokeStyle = isCenter ? '#4338ca' : '#a5b4fc';
-    ctx.lineWidth = isCenter ? 3 / globalScale : 1.5 / globalScale;
+    ctx.strokeStyle = isCenter ? '#4338ca' : isMe ? '#d97706' : '#a5b4fc';
+    ctx.lineWidth = (isCenter || isMe ? 3 : 1.5) / globalScale;
     ctx.stroke();
 
+    // isMe のとき点線の枠で強調
+    if (isMe) {
+      ctx.save();
+      ctx.setLineDash([3 / globalScale, 2 / globalScale]);
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, radius + 3 / globalScale, 0, 2 * Math.PI);
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 1.5 / globalScale;
+      ctx.stroke();
+      ctx.restore();
+    }
+
     // Person icon
-    const iconColor = isCenter ? 'rgba(255,255,255,0.9)' : '#6366f1';
+    const iconColor = (isCenter || isMe) ? 'rgba(255,255,255,0.9)' : '#6366f1';
     ctx.fillStyle = iconColor;
     ctx.beginPath();
     ctx.arc(node.x, node.y - radius * 0.2, radius * 0.32, 0, 2 * Math.PI);
@@ -67,21 +79,21 @@ export default function NetworkGraph({ graphData, focusedNodeId, onNodeClick }) 
     ctx.fill();
 
     // Name label
-    ctx.font = `${isCenter ? 'bold ' : ''}${fontSize}px -apple-system, sans-serif`;
+    ctx.font = `${(isCenter || isMe) ? 'bold ' : ''}${fontSize}px -apple-system, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
 
-    const label = node.name;
+    const label = isMe ? `${node.name}（自分）` : node.name;
     const labelY = node.y + radius + 3 / globalScale;
 
     ctx.fillStyle = 'rgba(255,255,255,0.85)';
     const tw = ctx.measureText(label).width;
     ctx.fillRect(node.x - tw / 2 - 2 / globalScale, labelY - 1 / globalScale, tw + 4 / globalScale, fontSize + 2 / globalScale);
 
-    ctx.fillStyle = isCenter ? '#3730a3' : '#374151';
+    ctx.fillStyle = isCenter ? '#3730a3' : isMe ? '#92400e' : '#374151';
     ctx.fillText(label, node.x, labelY);
 
-    if (node.company) {
+    if (!isMe && node.company) {
       const smallFont = fontSize * 0.82;
       ctx.font = `${smallFont}px -apple-system, sans-serif`;
       ctx.fillStyle = '#9ca3af';

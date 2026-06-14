@@ -28,56 +28,112 @@ export default function Network() {
   const loadNetwork = async (userId) => {
     setLoading(true);
     try {
+      const myId = String(user?.id);
+      const focusId = String(userId);
+      const isSelf = myId === focusId;
+
+      // フォーカス対象のネットワーク取得
       const [networkRes, userRes] = await Promise.all([
-        api.get(`/connections/network/${userId}`),
-        api.get(`/users/${userId}`),
+        api.get(`/connections/network/${focusId}`),
+        api.get(`/users/${focusId}`),
       ]);
       setFocusedUser(userRes.data);
 
       const connections = networkRes.data;
       const nodesMap = new Map();
-      // 中心ノードを原点に固定
-      nodesMap.set(String(userId), {
-        id: String(userId),
+      const linksMap = new Map(); // 重複エッジ防止
+
+      // 中心ノード（フォーカス対象）
+      nodesMap.set(focusId, {
+        id: focusId,
         name: userRes.data.name,
         company: userRes.data.company,
+        avatar_url: userRes.data.avatar_url,
         isCenter: true,
-        fx: 0, fy: 0,
+        fx: 0, fy: 0, x: 0, y: 0,
       });
 
       connections.forEach(conn => {
         const rid = String(conn.requester_id);
         const eid = String(conn.receiver_id);
-        if (!nodesMap.has(rid)) {
+        if (!nodesMap.has(rid))
           nodesMap.set(rid, { id: rid, name: conn.requester_name, company: conn.requester_company });
-        }
-        if (!nodesMap.has(eid)) {
+        if (!nodesMap.has(eid))
           nodesMap.set(eid, { id: eid, name: conn.receiver_name, company: conn.receiver_company });
-        }
+        const key = [rid, eid].sort().join('-');
+        if (!linksMap.has(key))
+          linksMap.set(key, { source: rid, target: eid, label: conn.relationship_type, relationshipType: conn.relationship_type });
       });
 
-      // 中心ノード以外を均等にラジアル配置（x/y/fx/fyをすべて設定）
+      // 自分を表示していない場合は追加
+      if (!isSelf && !nodesMap.has(myId)) {
+        const meRes = await api.get(`/users/${myId}`);
+        nodesMap.set(myId, {
+          id: myId,
+          name: meRes.data.name,
+          company: meRes.data.company,
+          avatar_url: meRes.data.avatar_url,
+          isSelf: true,
+        });
+      }
+
+      // 自分とフォーカス対象の間のエッジを取得して追加
+      if (!isSelf) {
+        try {
+          const myNetRes = await api.get(`/connections/network/${myId}`);
+          myNetRes.data.forEach(conn => {
+            const rid = String(conn.requester_id);
+            const eid = String(conn.receiver_id);
+            const otherNodeId = rid === myId ? eid : rid;
+            // フォーカス対象との直接接続のみ追加
+            if (otherNodeId === focusId) {
+              const key = [rid, eid].sort().join('-');
+              if (!linksMap.has(key))
+                linksMap.set(key, { source: rid, target: eid, label: conn.relationship_type, relationshipType: conn.relationship_type });
+            }
+          });
+        } catch {}
+      }
+
+      // ラジアル配置：自分ノードを特別扱い
       const neighbors = Array.from(nodesMap.values()).filter(n => !n.isCenter);
-      const radius = Math.max(50, neighbors.length * 20);
-      neighbors.forEach((node, i) => {
-        const angle = (2 * Math.PI * i) / neighbors.length;
-        const nx = Math.cos(angle) * radius;
-        const ny = Math.sin(angle) * radius;
-        node.fx = nx; node.fy = ny;
-        node.x = nx;  node.y = ny;
+      const meNode = nodesMap.get(myId);
+
+      // 自分のポジションを左上に固定（フォーカスが他人のとき）
+      if (!isSelf && meNode && !meNode.isCenter) {
+        meNode.isMe = true;
+        // 自分は左斜め上に固定
+        const angle = -Math.PI * 0.75;
+        const r = Math.max(60, neighbors.length * 18);
+        meNode.fx = Math.cos(angle) * r;
+        meNode.fy = Math.sin(angle) * r;
+        meNode.x = meNode.fx;
+        meNode.y = meNode.fy;
+      }
+
+      // それ以外を均等ラジアル配置
+      const othersToPlace = neighbors.filter(n => !n.isMe && !n.isCenter);
+      const radius = Math.max(60, neighbors.length * 18);
+      const selfAngle = (!isSelf && meNode && !meNode.isCenter) ? -Math.PI * 0.75 : null;
+      othersToPlace.forEach((node, i) => {
+        // 自分の角度を避けて配置
+        let baseAngle = (2 * Math.PI * i) / othersToPlace.length;
+        if (selfAngle !== null) {
+          // 自分の位置をスキップするように角度をずらす
+          const gap = (2 * Math.PI) / (othersToPlace.length + 1);
+          baseAngle = selfAngle + gap * (i + 1);
+        }
+        node.fx = Math.cos(baseAngle) * radius;
+        node.fy = Math.sin(baseAngle) * radius;
+        node.x = node.fx;
+        node.y = node.fy;
       });
+
       // 中心ノードの x/y も明示
-      const centerNode = nodesMap.get(String(userId));
+      const centerNode = nodesMap.get(focusId);
       if (centerNode) { centerNode.x = 0; centerNode.y = 0; }
 
-      const links = connections.map(conn => ({
-        source: String(conn.requester_id),
-        target: String(conn.receiver_id),
-        label: conn.relationship_type,
-        relationshipType: conn.relationship_type,
-      }));
-
-      setGraphData({ nodes: Array.from(nodesMap.values()), links });
+      setGraphData({ nodes: Array.from(nodesMap.values()), links: Array.from(linksMap.values()) });
     } catch {
       // silent fail
     } finally {
