@@ -50,15 +50,39 @@ router.get('/network/:userId', requireAuth, async (req, res) => {
   }
 });
 
+router.get('/heart-taken', requireAuth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id FROM connections
+       WHERE requester_id = $1 AND relationship_type = '♡'
+         AND status IN ('pending', 'accepted')`,
+      [req.user.id]
+    );
+    res.json({ taken: result.rows.length > 0 });
+  } catch {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.post('/', requireAuth, async (req, res) => {
   const { receiver_id, relationship_type } = req.body;
   if (receiver_id === req.user.id) {
     return res.status(400).json({ error: '自分自身には申請できません' });
   }
   try {
+    // ♡は1人にしか送れない
+    if (relationship_type === '♡') {
+      const existing = await pool.query(
+        `SELECT id FROM connections WHERE requester_id = $1 AND relationship_type = '♡' AND status IN ('pending', 'accepted')`,
+        [req.user.id]
+      );
+      if (existing.rows.length > 0) {
+        return res.status(409).json({ error: '♡ は1人にしか送れません' });
+      }
+    }
     const result = await pool.query(
       'INSERT INTO connections (requester_id, receiver_id, relationship_type) VALUES ($1, $2, $3) RETURNING *',
-      [req.user.id, receiver_id, relationship_type || '友人']
+      [req.user.id, receiver_id, relationship_type || 'その他']
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {

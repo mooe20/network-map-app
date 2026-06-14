@@ -2,14 +2,15 @@ import { useRef, useCallback, useEffect, useState } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 
 const RELATIONSHIP_COLORS = {
-  '友人': '#60a5fa',
-  '同僚': '#34d399',
-  '所属': '#a78bfa',
-  '活動': '#6ee7b7',
-  '出身大学': '#fbbf24',
-  '面識あり': '#94a3b8',
-  '関係不良': '#f87171',
   '家族': '#f472b6',
+  'ビジネス': '#34d399',
+  '地元': '#fbbf24',
+  '大学': '#60a5fa',
+  'イベント(留学・趣味・活動)': '#a78bfa',
+  'バイト・インターン': '#6ee7b7',
+  'SNS': '#94a3b8',
+  'その他': '#d1d5db',
+  '♡': '#ef4444',
 };
 
 const DEFAULT_COLOR = '#94a3b8';

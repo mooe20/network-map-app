@@ -151,7 +151,18 @@ const UNIVERSITIES = [
 ].filter((v, i, a) => a.indexOf(v) === i).sort();
 
 const SNS_PLATFORMS = ['Twitter/X', 'LinkedIn', 'Instagram', 'GitHub', 'Facebook', 'Website', 'その他'];
-const RELATIONSHIP_TYPES = ['友人', '同僚', '所属', '活動', '出身大学', '面識あり', '家族'];
+const RELATIONSHIP_TYPES = ['家族', 'ビジネス', '地元', '大学', 'イベント(留学・趣味・活動)', 'バイト・インターン', 'SNS', 'その他', '♡'];
+const RELATIONSHIP_COLORS = {
+  '家族': '#f472b6',
+  'ビジネス': '#34d399',
+  '地元': '#fbbf24',
+  '大学': '#60a5fa',
+  'イベント(留学・趣味・活動)': '#a78bfa',
+  'バイト・インターン': '#6ee7b7',
+  'SNS': '#94a3b8',
+  'その他': '#d1d5db',
+  '♡': '#ef4444',
+};
 
 export default function Profile() {
   const { id } = useParams();
@@ -165,7 +176,8 @@ export default function Profile() {
   const [form, setForm] = useState({});
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [showConnectModal, setShowConnectModal] = useState(false);
-  const [selectedType, setSelectedType] = useState('友人');
+  const [selectedType, setSelectedType] = useState('ビジネス');
+  const [heartTaken, setHeartTaken] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -190,6 +202,8 @@ export default function Profile() {
       if (!isOwn) {
         const connRes = await api.get(`/connections/status/${userId}`);
         setConnectionStatus(connRes.data.status);
+        const heartRes = await api.get('/connections/heart-taken');
+        setHeartTaken(heartRes.data.taken);
       }
     } catch {
       navigate('/');
@@ -217,6 +231,7 @@ export default function Profile() {
       await api.post('/connections', { receiver_id: parseInt(userId), relationship_type: selectedType });
       setConnectionStatus('pending');
       setShowConnectModal(false);
+      if (selectedType === '♡') setHeartTaken(true);
     } catch (err) {
       alert(err.response?.data?.error || '申請に失敗しました');
     }
@@ -273,20 +288,32 @@ export default function Profile() {
             <h3 className="font-bold text-lg mb-1">{profile.name}さんと繋がる</h3>
             <p className="text-sm text-gray-500 mb-4">関係タイプを選択してください</p>
             <div className="grid grid-cols-2 gap-2 mb-5">
-              {RELATIONSHIP_TYPES.map(type => (
-                <button
-                  key={type}
-                  onClick={() => setSelectedType(type)}
-                  className={`py-2 px-3 rounded-xl text-sm border-2 transition-colors font-medium ${
-                    selectedType === type
-                      ? 'bg-indigo-600 text-white border-indigo-600'
-                      : 'border-gray-200 text-gray-700 hover:border-indigo-300'
-                  }`}
-                >
-                  {type}
-                </button>
-              ))}
+              {RELATIONSHIP_TYPES.map(type => {
+                const isHeart = type === '♡';
+                const disabled = isHeart && heartTaken;
+                return (
+                  <button
+                    key={type}
+                    onClick={() => !disabled && setSelectedType(type)}
+                    disabled={disabled}
+                    className={`py-2 px-3 rounded-xl text-sm border-2 transition-colors font-medium relative ${
+                      disabled
+                        ? 'border-gray-100 text-gray-300 bg-gray-50 cursor-not-allowed'
+                        : selectedType === type
+                          ? 'text-white border-transparent'
+                          : 'border-gray-200 text-gray-700 hover:border-indigo-300'
+                    }`}
+                    style={selectedType === type && !disabled ? { backgroundColor: RELATIONSHIP_COLORS[type], borderColor: RELATIONSHIP_COLORS[type] } : {}}
+                  >
+                    {type}
+                    {disabled && <span className="block text-xs text-gray-300 font-normal">使用中</span>}
+                  </button>
+                );
+              })}
             </div>
+            {selectedType === '♡' && (
+              <p className="text-xs text-red-500 bg-red-50 rounded-xl px-3 py-2 mb-3">❤️ ♡ は1人にしか送れません</p>
+            )}
             <div className="flex gap-2">
               <button
                 onClick={() => setShowConnectModal(false)}
