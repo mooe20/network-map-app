@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
   company VARCHAR(100),
   title VARCHAR(100),
   bio TEXT,
-  avatar_url VARCHAR(500),
+  avatar_url TEXT,
   created_at TIMESTAMP DEFAULT NOW()
 );
 

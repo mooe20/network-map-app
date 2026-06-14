@@ -244,22 +244,71 @@ function EditForm({ form, setForm, onSave, onCancel, saving }) {
     setForm({ ...form, sns_links: links });
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const size = 200;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        // 正方形にクロップしてリサイズ
+        const min = Math.min(img.width, img.height);
+        const sx = (img.width - min) / 2;
+        const sy = (img.height - min) / 2;
+        ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        setForm(f => ({ ...f, avatar_url: dataUrl }));
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-bold text-gray-900">プロフィール編集</h2>
+
+      {/* アバター画像アップロード */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">プロフィール画像</label>
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-indigo-100 flex items-center justify-center text-indigo-600 text-2xl font-bold overflow-hidden flex-shrink-0">
+            {form.avatar_url
+              ? <img src={form.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+              : <span>{form.name?.[0] || '?'}</span>
+            }
+          </div>
+          <label className="cursor-pointer bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-sm font-medium px-4 py-2 rounded-xl transition-colors border border-indigo-200">
+            画像を選択
+            <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+          </label>
+          {form.avatar_url && (
+            <button
+              onClick={() => setForm(f => ({ ...f, avatar_url: '' }))}
+              className="text-xs text-red-400 hover:text-red-600"
+            >
+              削除
+            </button>
+          )}
+        </div>
+      </div>
+
       {[
         { label: '名前', key: 'name', type: 'text', required: true },
         { label: '会社・組織', key: 'company', type: 'text' },
         { label: '役職', key: 'title', type: 'text' },
-        { label: 'アバター画像 URL', key: 'avatar_url', type: 'url', placeholder: 'https://...' },
-      ].map(({ label, key, type, required, placeholder }) => (
+      ].map(({ label, key, type, required }) => (
         <div key={key}>
           <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
           <input
             type={type}
             value={form[key]}
             onChange={e => setForm({ ...form, [key]: e.target.value })}
-            placeholder={placeholder}
             required={required}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
