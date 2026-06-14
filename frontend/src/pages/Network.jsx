@@ -190,6 +190,14 @@ export default function Network() {
     });
   };
 
+  // 関係タイプごとの人数カウント
+  const typeCounts = graphData.links
+    .filter(l => l.relationshipType)
+    .reduce((acc, l) => {
+      acc[l.relationshipType] = (acc[l.relationshipType] || 0) + 1;
+      return acc;
+    }, {});
+
   // グラフ上に存在する関係タイプ一覧（パスや未接続除く）
   const availableTypes = [...new Set(
     graphData.links
@@ -485,7 +493,7 @@ export default function Network() {
                   <button
                     key={type}
                     onClick={() => toggleFilter(type)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium shadow-md border-2 transition-all"
+                    className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium shadow-md border-2 transition-all"
                     style={{
                       backgroundColor: active ? color : 'white',
                       borderColor: color,
@@ -497,6 +505,13 @@ export default function Network() {
                       style={{ backgroundColor: active ? 'white' : color }}
                     />
                     {type}
+                    {/* 人数バッジ */}
+                    <span
+                      className="absolute -top-2 -right-2 min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-white text-[10px] font-bold px-1 shadow"
+                      style={{ backgroundColor: active ? '#1f2937' : color }}
+                    >
+                      {typeCounts[type] || 0}
+                    </span>
                   </button>
                 );
               })}
