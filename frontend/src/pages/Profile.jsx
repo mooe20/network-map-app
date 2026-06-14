@@ -1,7 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
+
+const UNIVERSITIES = [
+  '東京大学','京都大学','大阪大学','東北大学','名古屋大学','九州大学','北海道大学','東京工業大学',
+  '一橋大学','神戸大学','筑波大学','広島大学','千葉大学','岡山大学','金沢大学','熊本大学',
+  '新潟大学','長崎大学','鹿児島大学','岐阜大学','三重大学','滋賀大学','愛媛大学','徳島大学',
+  '山形大学','群馬大学','富山大学','福井大学','山梨大学','信州大学','静岡大学','浜松医科大学',
+  '横浜国立大学','埼玉大学','電気通信大学','東京農工大学','東京外国語大学','お茶の水女子大学',
+  '東京学芸大学','東京海洋大学','早稲田大学','慶應義塾大学','上智大学','東京理科大学',
+  '明治大学','青山学院大学','立教大学','中央大学','法政大学','学習院大学',
+  '同志社大学','立命館大学','関西大学','関西学院大学','近畿大学','龍谷大学','佛教大学',
+  '日本大学','東洋大学','駒澤大学','専修大学','東海大学','帝京大学','國學院大學','武蔵大学',
+  '成蹊大学','成城大学','明治学院大学','獨協大学','神奈川大学','東京電機大学','芝浦工業大学',
+  '工学院大学','東京都市大学','日本工業大学','大阪工業大学','大阪経済大学','摂南大学',
+  '神戸学院大学','甲南大学','武庫川女子大学','京都産業大学','福岡大学','西南学院大学',
+  '立命館アジア太平洋大学','国際基督教大学','津田塾大学','東京女子大学','日本女子大学',
+  '聖心女子大学','共立女子大学','フェリス女学院大学','昭和女子大学','大妻女子大学',
+];
 
 const SNS_PLATFORMS = ['Twitter/X', 'LinkedIn', 'Instagram', 'GitHub', 'Facebook', 'Website', 'その他'];
 const RELATIONSHIP_TYPES = ['友人', '同僚', '所属', '活動', '出身大学', '面識あり', '家族'];
@@ -36,6 +53,7 @@ export default function Profile() {
         company: res.data.company || '',
         title: res.data.title || '',
         bio: res.data.bio || '',
+        school: res.data.school || '',
         avatar_url: res.data.avatar_url || '',
         sns_links: res.data.sns_links || [],
       });
@@ -160,6 +178,48 @@ export default function Profile() {
   );
 }
 
+function SchoolInput({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  const filtered = value
+    ? UNIVERSITIES.filter(u => u.includes(value))
+    : UNIVERSITIES;
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <label className="block text-sm font-medium text-gray-700 mb-1">出身校</label>
+      <input
+        type="text"
+        value={value}
+        onChange={e => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        placeholder="大学名を入力または選択..."
+        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+      />
+      {open && filtered.length > 0 && (
+        <ul className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+          {filtered.map(u => (
+            <li
+              key={u}
+              onMouseDown={() => { onChange(u); setOpen(false); }}
+              className={`px-3 py-2 text-sm cursor-pointer hover:bg-indigo-50 ${value === u ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-700'}`}
+            >
+              {u}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function ViewProfile({ profile, isOwn, connectionStatus, onConnectClick }) {
   return (
     <div>
@@ -179,6 +239,14 @@ function ViewProfile({ profile, isOwn, connectionStatus, onConnectClick }) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
               {profile.company}
+            </p>
+          )}
+          {profile.school && (
+            <p className="text-gray-500 text-sm flex items-center gap-1 mt-0.5">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+              </svg>
+              {profile.school}
             </p>
           )}
         </div>
@@ -314,6 +382,8 @@ function EditForm({ form, setForm, onSave, onCancel, saving }) {
           />
         </div>
       ))}
+
+      <SchoolInput value={form.school} onChange={v => setForm({ ...form, school: v })} />
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">自己紹介</label>
         <textarea
