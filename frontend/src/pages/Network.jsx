@@ -118,12 +118,6 @@ export default function Network() {
                 });
               }
             }
-          } else if (!pathUsers) {
-            // 本当につながりがない場合だけ破線
-            const key = [myId, focusId].sort().join('-');
-            if (!linksMap.has(key)) {
-              linksMap.set(key, { source: myId, target: focusId, label: '', relationshipType: null, isPhantom: true });
-            }
           }
         } catch {}
       }
