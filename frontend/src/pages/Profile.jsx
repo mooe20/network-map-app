@@ -178,6 +178,7 @@ export default function Profile() {
   const [showConnectModal, setShowConnectModal] = useState(false);
   const [selectedType, setSelectedType] = useState('ビジネス');
   const [heartTaken, setHeartTaken] = useState(false);
+  const [connections, setConnections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -199,6 +200,20 @@ export default function Profile() {
         avatar_url: res.data.avatar_url || '',
         sns_links: res.data.sns_links || [],
       });
+      // 繋がりリストを取得（自分も他人も）
+      const netRes = await api.get(`/connections/network/${userId}`);
+      // 相手のユーザー情報を整形
+      const connList = netRes.data.map(c => {
+        const isRequester = String(c.requester_id) === String(userId);
+        return {
+          id: isRequester ? c.receiver_id : c.requester_id,
+          name: isRequester ? c.receiver_name : c.requester_name,
+          company: isRequester ? c.receiver_company : c.requester_company,
+          relationship_type: c.relationship_type,
+        };
+      });
+      setConnections(connList);
+
       if (!isOwn) {
         const connRes = await api.get(`/connections/status/${userId}`);
         setConnectionStatus(connRes.data.status);
@@ -277,6 +292,7 @@ export default function Profile() {
               isOwn={isOwn}
               connectionStatus={connectionStatus}
               onConnectClick={() => setShowConnectModal(true)}
+              connections={connections}
             />
           )}
         </div>
@@ -377,10 +393,10 @@ function SchoolInput({ value, onChange }) {
   );
 }
 
-function ViewProfile({ profile, isOwn, connectionStatus, onConnectClick }) {
+function ViewProfile({ profile, isOwn, connectionStatus, onConnectClick, connections }) {
   return (
     <div>
-      <div className="flex items-start gap-4 mb-6">
+      <div className="flex items-start gap-4 mb-4">
         <div className="w-16 h-16 rounded-2xl bg-indigo-100 flex items-center justify-center text-indigo-600 text-2xl font-bold overflow-hidden flex-shrink-0">
           {profile.avatar_url
             ? <img src={profile.avatar_url} alt={profile.name} className="w-full h-full object-cover" />
@@ -406,6 +422,15 @@ function ViewProfile({ profile, isOwn, connectionStatus, onConnectClick }) {
               {profile.school}
             </p>
           )}
+          {/* 繋がり数バッジ */}
+          <div className="mt-2">
+            <span className="inline-flex items-center gap-1 text-xs bg-indigo-50 text-indigo-600 font-semibold px-2.5 py-1 rounded-full">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              繋がり {connections.length}人
+            </span>
+          </div>
         </div>
       </div>
 
@@ -430,6 +455,39 @@ function ViewProfile({ profile, isOwn, connectionStatus, onConnectClick }) {
                 <span className="text-gray-400 text-xs bg-gray-100 px-2 py-0.5 rounded-full">{link.platform}</span>
                 <span className="truncate">{link.url}</span>
               </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 繋がりリスト */}
+      {connections.length > 0 && (
+        <div className="mb-5">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">繋がり</h3>
+          <div className="space-y-2">
+            {connections.map(conn => (
+              <Link
+                key={conn.id}
+                to={`/profile/${conn.id}`}
+                className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm flex-shrink-0">
+                  {conn.name[0]}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800 truncate">{conn.name}</p>
+                  {conn.company && <p className="text-xs text-gray-400 truncate">{conn.company}</p>}
+                </div>
+                <span
+                  className="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0"
+                  style={{
+                    backgroundColor: (RELATIONSHIP_COLORS[conn.relationship_type] || '#94a3b8') + '22',
+                    color: RELATIONSHIP_COLORS[conn.relationship_type] || '#94a3b8',
+                  }}
+                >
+                  {conn.relationship_type}
+                </span>
+              </Link>
             ))}
           </div>
         </div>
