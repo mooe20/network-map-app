@@ -15,6 +15,7 @@ export default function Network() {
   const [pendingRequests, setPendingRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('graph');
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
 
   useEffect(() => {
     if (focusedUserId) loadNetwork(focusedUserId);
@@ -128,7 +129,7 @@ export default function Network() {
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       {/* Sidebar */}
-      <div className="w-72 bg-white border-r flex flex-col flex-shrink-0">
+      <div className={`${sidebarOpen ? 'w-72' : 'w-0'} bg-white border-r flex flex-col flex-shrink-0 transition-all duration-300 overflow-hidden`}>
         {/* Header */}
         <div className="p-4 border-b">
           <div className="flex items-center justify-between mb-3">
@@ -319,6 +320,21 @@ export default function Network() {
 
       {/* Graph Area */}
       <div className="flex-1 relative overflow-hidden">
+        {/* サイドバー開閉ボタン */}
+        <button
+          onClick={() => setSidebarOpen(v => !v)}
+          className="absolute top-3 left-3 z-10 bg-white border border-gray-200 rounded-xl p-2 shadow-sm hover:bg-gray-50 transition-colors"
+        >
+          {sidebarOpen ? (
+            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7M18 19l-7-7 7-7" />
+            </svg>
+          ) : (
+            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M6 5l7 7-7 7" />
+            </svg>
+          )}
+        </button>
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-gray-400 text-sm">グラフを読み込み中...</div>
