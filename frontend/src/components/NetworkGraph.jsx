@@ -110,10 +110,59 @@ export default function NetworkGraph({ graphData, focusedNodeId, onNodeClick }) 
   }, [focusedNodeId]);
 
   const linkCanvasObject = useCallback((link, ctx, globalScale) => {
-    const color = RELATIONSHIP_COLORS[link.relationshipType] || DEFAULT_COLOR;
     const start = link.source;
     const end = link.target;
     if (typeof start !== 'object' || typeof end !== 'object') return;
+
+    // 破線（間接つながり）の描画
+    if (link.isPhantom) {
+      const dx = end.x - start.x;
+      const dy = end.y - start.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const ux = dx / dist;
+      const uy = dy / dist;
+
+      // 破線
+      ctx.save();
+      ctx.setLineDash([6 / globalScale, 4 / globalScale]);
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.strokeStyle = '#d1d5db';
+      ctx.lineWidth = 1.5 / globalScale;
+      ctx.stroke();
+      ctx.restore();
+
+      // 線の上に点を3個置く
+      const dotR = 3 / globalScale;
+      const positions = [0.3, 0.5, 0.7];
+      positions.forEach(t => {
+        const px = start.x + dx * t;
+        const py = start.y + dy * t;
+        ctx.beginPath();
+        ctx.arc(px, py, dotR, 0, 2 * Math.PI);
+        ctx.fillStyle = '#9ca3af';
+        ctx.fill();
+      });
+
+      // 中央に「未接続」ラベル
+      const midX = (start.x + end.x) / 2;
+      const midY = (start.y + end.y) / 2;
+      const fontSize = Math.max(8 / globalScale, 2);
+      ctx.font = `${fontSize}px -apple-system, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const text = '未接続';
+      const tw = ctx.measureText(text).width;
+      const pad = 2.5 / globalScale;
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillRect(midX - tw/2 - pad, midY - fontSize/2 - pad, tw + pad*2, fontSize + pad*2);
+      ctx.fillStyle = '#9ca3af';
+      ctx.fillText(text, midX, midY);
+      return;
+    }
+
+    const color = RELATIONSHIP_COLORS[link.relationshipType] || DEFAULT_COLOR;
 
     ctx.beginPath();
     ctx.moveTo(start.x, start.y);
@@ -171,7 +220,7 @@ export default function NetworkGraph({ graphData, focusedNodeId, onNodeClick }) 
       onEngineStop={() => {
         if (fgRef.current) fgRef.current.zoomToFit(500, 50);
       }}
-      linkDirectionalParticles={2}
+      linkDirectionalParticles={link => link.isPhantom ? 0 : 2}
       linkDirectionalParticleWidth={2}
       linkDirectionalParticleColor={link => RELATIONSHIP_COLORS[link.relationshipType] || DEFAULT_COLOR}
       enableNodeDrag={true}

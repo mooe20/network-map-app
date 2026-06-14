@@ -78,6 +78,7 @@ export default function Network() {
       }
 
       // 自分とフォーカス対象の間のエッジを取得して追加
+      let directlyConnected = false;
       if (!isSelf) {
         try {
           const myNetRes = await api.get(`/connections/network/${myId}`);
@@ -85,14 +86,29 @@ export default function Network() {
             const rid = String(conn.requester_id);
             const eid = String(conn.receiver_id);
             const otherNodeId = rid === myId ? eid : rid;
-            // フォーカス対象との直接接続のみ追加
             if (otherNodeId === focusId) {
               const key = [rid, eid].sort().join('-');
-              if (!linksMap.has(key))
+              if (!linksMap.has(key)) {
                 linksMap.set(key, { source: rid, target: eid, label: conn.relationship_type, relationshipType: conn.relationship_type });
+              }
+              directlyConnected = true;
             }
           });
         } catch {}
+
+        // 直接つながっていない場合でも点線で自分とフォーカス対象を結ぶ
+        if (!directlyConnected) {
+          const key = [myId, focusId].sort().join('-');
+          if (!linksMap.has(key)) {
+            linksMap.set(key, {
+              source: myId,
+              target: focusId,
+              label: '',
+              relationshipType: null,
+              isPhantom: true,
+            });
+          }
+        }
       }
 
       // ラジアル配置：自分ノードを特別扱い
