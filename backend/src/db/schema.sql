@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS users (
   name VARCHAR(100) NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
+  email_verified BOOLEAN NOT NULL DEFAULT FALSE,
   company VARCHAR(100),
   title VARCHAR(100),
   bio TEXT,
@@ -11,6 +12,16 @@ CREATE TABLE IF NOT EXISTS users (
   hobby VARCHAR(200),
   node_color VARCHAR(7) DEFAULT '#6366f1',
   avatar_url TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS email_tokens (
+  id SERIAL PRIMARY KEY,
+  token VARCHAR(64) UNIQUE NOT NULL,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  type VARCHAR(20) NOT NULL, -- 'verify' or 'reset'
+  expires_at TIMESTAMP NOT NULL,
+  used_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW()
 );
 

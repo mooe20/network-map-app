@@ -8,21 +8,45 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState(''); // 未確認の場合
+  const [resending, setResending] = useState(false);
+  const [resendMsg, setResendMsg] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setUnverifiedEmail('');
+    setResendMsg('');
     setLoading(true);
     try {
       const res = await api.post('/auth/login', { email, password });
       login(res.data.token, res.data.user);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.error || 'ログインに失敗しました');
+      const data = err.response?.data;
+      if (data?.code === 'EMAIL_NOT_VERIFIED') {
+        setUnverifiedEmail(data.email || email);
+        setError(data.error);
+      } else {
+        setError(data?.error || 'ログインに失敗しました');
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setResending(true);
+    setResendMsg('');
+    try {
+      await api.post('/auth/resend-verification', { email: unverifiedEmail });
+      setResendMsg('確認メールを再送しました！メールをご確認ください。');
+    } catch {
+      setResendMsg('再送に失敗しました。しばらくしてからお試しください。');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -50,7 +74,9 @@ export default function Login() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              パスワード
+            </label>
             <input
               type="password"
               value={password}
@@ -58,8 +84,34 @@ export default function Login() {
               className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm"
               required
             />
+            <div className="text-right mt-1">
+              <Link to="/forgot-password" className="text-xs text-indigo-500 hover:underline">
+                パスワードを忘れた場合
+              </Link>
+            </div>
           </div>
-          {error && <p className="text-red-500 text-sm bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+          {error && (
+            <div className="bg-red-50 px-3 py-2 rounded-lg">
+              <p className="text-red-500 text-sm">{error}</p>
+              {unverifiedEmail && (
+                <>
+                  {resendMsg
+                    ? <p className="text-green-600 text-xs mt-1">{resendMsg}</p>
+                    : (
+                      <button
+                        type="button"
+                        onClick={handleResend}
+                        disabled={resending}
+                        className="text-indigo-600 text-xs underline mt-1 disabled:opacity-60"
+                      >
+                        {resending ? '送信中...' : '確認メールを再送する'}
+                      </button>
+                    )
+                  }
+                </>
+              )}
+            </div>
+          )}
           <button
             type="submit"
             disabled={loading}

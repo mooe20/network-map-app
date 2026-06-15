@@ -4,6 +4,9 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Network from './pages/Network';
 import Profile from './pages/Profile';
+import VerifyEmail from './pages/VerifyEmail';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -20,6 +23,9 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/" element={<PrivateRoute><Network /></PrivateRoute>} />
           <Route path="/profile/:id" element={<PrivateRoute><Profile /></PrivateRoute>} />
           <Route path="/me" element={<PrivateRoute><Profile /></PrivateRoute>} />
