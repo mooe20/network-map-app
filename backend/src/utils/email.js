@@ -1,22 +1,13 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
-
-const FROM = process.env.SMTP_FROM || process.env.SMTP_USER;
+const resend = new Resend(process.env.RESEND_API_KEY);
+const FROM = process.env.RESEND_FROM || 'onboarding@resend.dev';
 const APP_URL = process.env.APP_URL || 'https://network-map-app-production.up.railway.app';
 
 export async function sendVerificationEmail(email, token) {
   const url = `${APP_URL}/verify-email?token=${token}`;
-  await transporter.sendMail({
-    from: `"人脈マップ" <${FROM}>`,
+  await resend.emails.send({
+    from: FROM,
     to: email,
     subject: '【人脈マップ】メールアドレスを確認してください',
     html: `
@@ -37,8 +28,8 @@ export async function sendVerificationEmail(email, token) {
 
 export async function sendPasswordResetEmail(email, token) {
   const url = `${APP_URL}/reset-password?token=${token}`;
-  await transporter.sendMail({
-    from: `"人脈マップ" <${FROM}>`,
+  await resend.emails.send({
+    from: FROM,
     to: email,
     subject: '【人脈マップ】パスワード再設定',
     html: `
