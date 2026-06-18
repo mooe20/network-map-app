@@ -310,7 +310,7 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+      <nav className="bg-white border-b px-4 py-3 flex items-center justify-between sticky top-0 z-10" style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))' }}>
         <Link to="/" className="flex items-center gap-1.5 text-indigo-600 font-medium text-sm hover:text-indigo-800">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

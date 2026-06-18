@@ -260,11 +260,11 @@ export default function Network() {
   ];
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-dvh bg-gray-50 overflow-hidden">
       {/* Sidebar */}
       <div className={`${sidebarOpen ? 'w-72' : 'w-0'} bg-white border-r flex flex-col flex-shrink-0 transition-all duration-300 overflow-hidden`}>
         {/* Header */}
-        <div className="p-4 border-b">
+        <div className="pt-safe px-4 pb-4 pt-4 border-b" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top, 0px))' }}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center">
@@ -457,7 +457,8 @@ export default function Network() {
         {/* サイドバー開閉ボタン */}
         <button
           onClick={() => setSidebarOpen(v => !v)}
-          className="absolute top-3 left-3 z-10 bg-white border border-gray-200 rounded-xl p-2 shadow-sm hover:bg-gray-50 transition-colors"
+          className="absolute left-3 z-10 bg-white border border-gray-200 rounded-xl p-2 shadow-sm hover:bg-gray-50 transition-colors"
+          style={{ top: 'max(0.75rem, env(safe-area-inset-top, 0px))' }}
         >
           {sidebarOpen ? (
             <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
